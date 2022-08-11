@@ -1,5 +1,3 @@
-jbjhdbhj
-hjxbcvhj
-hjcvjhx
-\ghdzbv
-cshjgv
+FROM alpine
+RUN apk upgrade
+
