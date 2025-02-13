@@ -1,36 +1,29 @@
 trigger:
-- main # Trigger pipeline on commits to the main branch
+- main
 
 pool:
-  vmImage: 'ubuntu-latest' # Use an Ubuntu agent for the pipeline
+  name: demovmpool
 
-variables:
-  # Define variables for ACR
-  ACR_NAME: 'mycontainerregistry' # Replace with your ACR name
-  IMAGE_NAME: 'myapp' # Replace with the name of your container image
+steps:
 
-stages:
-- stage: BuildAndPush
-  displayName: Build and Push Docker Image
-  jobs:
-  - job: BuildAndPushJob
-    displayName: Build and Push
-    steps:
-    - task: AzureCLI@2
-      inputs:
-        azureSubscription: '<AzureServiceConnection>' # Replace with your service connection name
-        scriptType: bash
-        scriptLocation: inlineScript
-        inlineScript: |
-          # Login to Azure Container Registry
-          az acr login --name $(ACR_NAME)
+- script: | 
+    sudo apt update
+    sudo apt install docker.io -y
+    sudo systemctl start docker
 
-    - task: Docker@2
-      displayName: Build and Push Docker Image
-      inputs:
-        containerRegistry: '$(ACR_NAME).azurecr.io' # Replace with your ACR name
-        repository: '$(IMAGE_NAME)'
-        command: 'buildAndPush'
-        Dockerfile: '**/Dockerfile'
-        tags: |
-          latest
+- script: |
+    echo "Current user: $(whoami)"
+    sudo usermod -aG docker $(whoami)
+    sudo chmod 666 /var/run/docker.sock
+  displayName: 'Grant permissions to /var/run/docker.sock'
+
+- script: |
+    docker ps
+  displayName: 'Verify Docker access'
+  
+- task: Docker@2
+  inputs:
+    containerRegistry: 'devocontainerregistry'
+    repository: 'demoimage'
+    command: 'buildAndPush'
+    Dockerfile: '**/Dockerfile'
