@@ -1,3 +1,36 @@
-pipelines
-pipeline stage:
-stage1:
+trigger:
+- main # Trigger pipeline on commits to the main branch
+
+pool:
+  vmImage: 'ubuntu-latest' # Use an Ubuntu agent for the pipeline
+
+variables:
+  # Define variables for ACR
+  ACR_NAME: 'mycontainerregistry' # Replace with your ACR name
+  IMAGE_NAME: 'myapp' # Replace with the name of your container image
+
+stages:
+- stage: BuildAndPush
+  displayName: Build and Push Docker Image
+  jobs:
+  - job: BuildAndPushJob
+    displayName: Build and Push
+    steps:
+    - task: AzureCLI@2
+      inputs:
+        azureSubscription: '<AzureServiceConnection>' # Replace with your service connection name
+        scriptType: bash
+        scriptLocation: inlineScript
+        inlineScript: |
+          # Login to Azure Container Registry
+          az acr login --name $(ACR_NAME)
+
+    - task: Docker@2
+      displayName: Build and Push Docker Image
+      inputs:
+        containerRegistry: '$(ACR_NAME).azurecr.io' # Replace with your ACR name
+        repository: '$(IMAGE_NAME)'
+        command: 'buildAndPush'
+        Dockerfile: '**/Dockerfile'
+        tags: |
+          latest
